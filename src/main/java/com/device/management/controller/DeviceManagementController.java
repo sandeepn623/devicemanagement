@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/devices")
 public class DeviceManagementController {
@@ -26,5 +28,11 @@ public class DeviceManagementController {
         var cmd = apiMapper.toCreateCommand(request);
         var view = useCase.create(cmd);
         return apiMapper.toResponse(view);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
+        useCase.delete(id);
     }
 }
