@@ -1,5 +1,6 @@
 package com.device.management.entity;
 
+import com.device.management.state.DeviceState;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import org.hibernate.annotations.CreationTimestamp;
@@ -64,11 +65,5 @@ public class Device {
 
     public OffsetDateTime getCreationTime() {
         return creationTime;
-    }
-
-    enum DeviceState {
-        AVAILABLE,
-        IN_USE,
-        INACTIVE
     }
 }
