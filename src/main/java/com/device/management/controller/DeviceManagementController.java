@@ -30,6 +30,12 @@ public class DeviceManagementController {
         return apiMapper.toResponse(view);
     }
 
+    @GetMapping("/{id}")
+    public DeviceResponse get(@PathVariable UUID id) {
+        var view = useCase.get(id);
+        return apiMapper.toResponse(view);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {
