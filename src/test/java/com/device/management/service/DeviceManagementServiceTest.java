@@ -15,11 +15,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.device.management.TestConstants.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -87,5 +87,53 @@ public class DeviceManagementServiceTest {
         assertEquals(DeviceState.AVAILABLE, savedCaptor.getValue().getState());
         verify(mapper).toView(saved);
         verifyNoMoreInteractions(mapper, repository);
+    }
+
+    @Test
+    @DisplayName("delete() deletes device when not IN_USE (happy path)")
+    void delete_success_service() {
+        UUID id = UUID.fromString(DEVICE_ID);
+        Device device = new Device();
+        device.setName(DEVICE_NAME);
+        device.setBrand(DEVICE_BRAND);
+        device.setState(DeviceState.AVAILABLE);
+
+        when(repository.findById(id)).thenReturn(Optional.of(device));
+
+        service.delete(id);
+
+        verify(repository).findById(id);
+        verify(repository).deleteById(id);
+        verifyNoMoreInteractions(repository);
+    }
+
+    @Test
+    @DisplayName("delete() throws NoSuchElementException when device not found")
+    void delete_notFound_service() {
+        UUID id = UUID.fromString(DEVICE_ID);
+
+        when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(java.util.NoSuchElementException.class, () -> service.delete(id));
+        verify(repository).findById(id);
+        verify(repository, never()).deleteById(any());
+        verifyNoMoreInteractions(repository);
+    }
+
+    @Test
+    @DisplayName("delete() throws IllegalStateException when device is IN_USE")
+    void delete_inUse_service() {
+        UUID id = UUID.fromString(DEVICE_ID);
+        Device device = new Device();
+        device.setName(DEVICE_NAME);
+        device.setBrand(DEVICE_BRAND);
+        device.setState(DeviceState.IN_USE);
+
+        when(repository.findById(id)).thenReturn(Optional.of(device));
+
+        assertThrows(IllegalStateException.class, () -> service.delete(id));
+        verify(repository).findById(id);
+        verify(repository, never()).deleteById(any());
+        verifyNoMoreInteractions(repository);
     }
 }

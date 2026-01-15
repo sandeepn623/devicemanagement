@@ -77,7 +77,6 @@ public class DeviceManagementControllerTest {
                 "\"state\":\"" + state + "\"" +
                 "}";
 
-        // Act + Assert
         mockMvc.perform(post("/devices")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
