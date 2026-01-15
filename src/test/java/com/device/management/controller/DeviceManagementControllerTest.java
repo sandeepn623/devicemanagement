@@ -18,12 +18,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.OffsetDateTime;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import static com.device.management.TestConstants.*;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -100,5 +103,24 @@ public class DeviceManagementControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @DisplayName("DELETE /devices/{id} returns 204 No Content when deleted")
+    void deleteDevice_http_success() throws Exception {
+        UUID id = UUID.fromString(DEVICE_ID);
+        // No stubbing needed; default is do nothing for void
 
+        mockMvc.perform(delete("/devices/{id}", id))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("DELETE /devices/{id} returns 404 when device not found")
+    void deleteDevice_http_notFound() throws Exception {
+        UUID id = UUID.fromString(DEVICE_ID);
+        doThrow(new NoSuchElementException("Device not found"))
+                .when(useCase).delete(id);
+
+        mockMvc.perform(delete("/devices/{id}", id))
+                .andExpect(status().isNotFound());
+    }
 }
