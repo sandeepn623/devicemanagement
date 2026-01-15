@@ -23,7 +23,7 @@ public class DeviceManagementService implements DeviceUseCase {
     @Override
     public DeviceView create(DeviceCreateCommand deviceCreateCommand) {
         Device device = mapper.toEntity(deviceCreateCommand);
-        Device saved = repository.save(device);
+        Device saved = repository.saveAndFlush(device);
         return mapper.toView(saved);
     }
 
