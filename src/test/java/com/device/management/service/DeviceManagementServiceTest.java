@@ -1,11 +1,10 @@
-package service;
+package com.device.management.service;
 
 import com.device.management.application.DeviceCreateCommand;
 import com.device.management.application.DeviceView;
 import com.device.management.entity.Device;
 import com.device.management.mapper.DeviceMapper;
 import com.device.management.repository.DeviceRepository;
-import com.device.management.service.DeviceManagementService;
 import com.device.management.state.DeviceState;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import static com.device.management.TestConstants.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
@@ -25,8 +25,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class DeviceManagementServiceTest {
 
-    public static final String DEVICE_NAME = "iPhone 14";
-    public static final String DEVICE_BRAND = "Apple";
     @Mock
     private DeviceRepository repository;
 
@@ -41,7 +39,7 @@ public class DeviceManagementServiceTest {
     void create_success() {
         // Arrange
         var deviceCreateCommand = new DeviceCreateCommand.Builder()
-                .name("iPhone 14")
+                .name(DEVICE_NAME)
                 .brand(DEVICE_BRAND)
                 .state(DeviceState.AVAILABLE)
                 .build();
@@ -59,8 +57,8 @@ public class DeviceManagementServiceTest {
         saved.setState(DeviceState.AVAILABLE);
 
         // Expected view mapped from the saved entity
-        UUID generatedId = UUID.fromString("11111111-2222-4333-8444-555555555555");
-        OffsetDateTime createdAt = OffsetDateTime.parse("2026-01-15T07:00:00Z");
+        UUID generatedId = UUID.fromString(DEVICE_ID);
+        OffsetDateTime createdAt = OffsetDateTime.parse(CREATION_TIME);
         DeviceView expectedView = new DeviceView(
                 generatedId,
                 DEVICE_NAME,
@@ -80,7 +78,7 @@ public class DeviceManagementServiceTest {
         assertNotNull(result);
         assertEquals(expectedView, result);
 
-        // Verify interactions and inputs
+        // Verify
         verify(mapper).toEntity(deviceCreateCommand);
         ArgumentCaptor<Device> savedCaptor = ArgumentCaptor.forClass(Device.class);
         verify(repository).saveAndFlush(savedCaptor.capture());

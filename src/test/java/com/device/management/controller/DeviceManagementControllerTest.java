@@ -1,9 +1,8 @@
-package controller;
+package com.device.management.controller;
 
 import com.device.management.application.DeviceCreateCommand;
 import com.device.management.application.DeviceUseCase;
 import com.device.management.application.DeviceView;
-import com.device.management.controller.DeviceManagementController;
 import com.device.management.dto.DeviceRequest;
 import com.device.management.dto.DeviceResponse;
 import com.device.management.exception.GlobalExceptionHandler;
@@ -21,6 +20,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import static com.device.management.TestConstants.*;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Mockito.when;
@@ -48,11 +48,9 @@ public class DeviceManagementControllerTest {
     @DisplayName("POST /devices returns 201 with created device body")
     void createDevice_http_success() throws Exception {
         // Arrange
-        String name = "iPhone 14";
-        String brand = "Apple";
         DeviceState state = DeviceState.AVAILABLE;
-        UUID id = UUID.fromString("11111111-1111-4111-8111-111111111111");
-        OffsetDateTime createdAt = OffsetDateTime.parse("2026-01-15T04:20:31Z");
+        UUID id = UUID.fromString(DEVICE_ID);
+        OffsetDateTime createdAt = OffsetDateTime.parse(CREATION_TIME);
 
         when(apiMapper.toCreateCommand(ArgumentMatchers.any(DeviceRequest.class)))
                 .thenAnswer(mock -> {
@@ -71,8 +69,8 @@ public class DeviceManagementControllerTest {
                 });
 
         String body = "{" +
-                "\"name\":\"" + name + "\"," +
-                "\"brand\":\"" + brand + "\"," +
+                "\"name\":\"" + DEVICE_NAME + "\"," +
+                "\"brand\":\"" + DEVICE_BRAND + "\"," +
                 "\"state\":\"" + state + "\"" +
                 "}";
 
@@ -82,8 +80,8 @@ public class DeviceManagementControllerTest {
                         .content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", is(id.toString())))
-                .andExpect(jsonPath("$.name", is(name)))
-                .andExpect(jsonPath("$.brand", is(brand)))
+                .andExpect(jsonPath("$.name", is(DEVICE_NAME)))
+                .andExpect(jsonPath("$.brand", is(DEVICE_BRAND)))
                 .andExpect(jsonPath("$.state", is(state.name())))
                 .andExpect(jsonPath("$.creationTime", notNullValue()));
     }
