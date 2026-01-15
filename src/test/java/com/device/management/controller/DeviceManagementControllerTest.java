@@ -26,8 +26,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -120,6 +120,60 @@ public class DeviceManagementControllerTest {
                 .when(useCase).delete(id);
 
         mockMvc.perform(delete("/devices/{id}", id))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("DELETE /devices/{id} returns 409 when device IN_USE state.")
+    void deleteDevice_http_conflict() throws Exception {
+        UUID id = UUID.fromString(DEVICE_ID);
+        doThrow(new IllegalStateException("Cannot delete a device while it is IN_USE"))
+            .when(useCase).delete(id);
+
+        mockMvc.perform(delete("/devices/{id}", id))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("GET /devices/{id} returns 200 with device body")
+    void getDevice_http_success() throws Exception {
+        UUID id = UUID.fromString(DEVICE_ID);
+        String name = DEVICE_NAME;
+        String brand = DEVICE_BRAND;
+        DeviceState state = DeviceState.AVAILABLE;
+        OffsetDateTime createdAt = OffsetDateTime.parse(CREATION_TIME);
+
+        when(useCase.get(id))
+                .thenReturn(new DeviceView(id, name, brand, state, createdAt));
+        when(apiMapper.toResponse(ArgumentMatchers.any(DeviceView.class)))
+                .thenAnswer(mock -> {
+                    DeviceView deviceView = mock.getArgument(0);
+                    return new DeviceResponse(
+                            deviceView.id(),
+                            deviceView.name(),
+                            deviceView.brand(),
+                            deviceView.state(),
+                            deviceView.creationTime());
+                });
+
+        // Act + Assert
+        mockMvc.perform(get("/devices/{id}", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(id.toString())))
+                .andExpect(jsonPath("$.name", is(name)))
+                .andExpect(jsonPath("$.brand", is(brand)))
+                .andExpect(jsonPath("$.state", is(state.name())))
+                .andExpect(jsonPath("$.creationTime", notNullValue()));
+    }
+
+    @Test
+    @DisplayName("GET /devices/{id} returns 404 when device not found")
+    void getDevice_http_notFound() throws Exception {
+        UUID id = UUID.fromString(DEVICE_ID);
+        when(useCase.get(id)).thenThrow(new NoSuchElementException("Device not found"));
+
+        // Act + Assert
+        mockMvc.perform(get("/devices/{id}", id))
                 .andExpect(status().isNotFound());
     }
 }

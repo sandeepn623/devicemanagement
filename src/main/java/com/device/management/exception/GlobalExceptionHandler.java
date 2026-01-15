@@ -14,4 +14,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleNotFound(NoSuchElementException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<String> handleConflict(IllegalStateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
 }
