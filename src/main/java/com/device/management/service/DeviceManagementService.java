@@ -1,6 +1,7 @@
 package com.device.management.service;
 
 import com.device.management.application.*;
+import com.device.management.entity.Device;
 import com.device.management.mapper.DeviceMapper;
 import com.device.management.repository.DeviceRepository;
 import org.springframework.stereotype.Service;
@@ -20,8 +21,10 @@ public class DeviceManagementService implements DeviceUseCase {
     }
 
     @Override
-    public DeviceView create(DeviceCreateCommand cmd) {
-        return null;
+    public DeviceView create(DeviceCreateCommand deviceCreateCommand) {
+        Device device = mapper.toEntity(deviceCreateCommand);
+        Device saved = repository.save(device);
+        return mapper.toView(saved);
     }
 
     @Override
