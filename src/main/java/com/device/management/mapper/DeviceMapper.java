@@ -1,8 +1,8 @@
 package com.device.management.mapper;
 
-import com.device.management.dto.DeviceRequest;
-import com.device.management.dto.DeviceResponse;
-import com.device.management.dto.DeviceUpdateRequest;
+import com.device.management.application.DeviceCreateCommand;
+import com.device.management.application.DeviceUpdateCommand;
+import com.device.management.application.DeviceView;
 import com.device.management.entity.Device;
 import org.mapstruct.*;
 
@@ -10,10 +10,10 @@ import org.mapstruct.*;
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface DeviceMapper {
 
-    Device toEntity(DeviceRequest request);
+    Device toEntity(DeviceCreateCommand cmd);
 
-    DeviceResponse toResponse(Device device);
+    DeviceView toView(Device device);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void update(@MappingTarget Device target, DeviceUpdateRequest update);
+    void update(@MappingTarget Device target, DeviceUpdateCommand update);
 }
