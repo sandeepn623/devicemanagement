@@ -11,7 +11,7 @@
     </parent>
     <groupId>com.device.management</groupId>
     <artifactId>deviceManagement</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
 
     <properties>
         <maven.compiler.source>25</maven.compiler.source>
