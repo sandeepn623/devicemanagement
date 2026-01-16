@@ -4,7 +4,6 @@ import com.device.management.state.DeviceState;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UuidGenerator;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -15,7 +14,6 @@ public class Device {
 
     @Id
     @GeneratedValue
-    @UuidGenerator
     @Column(name = "id", nullable = false, updatable = false, columnDefinition = "uuid")
     private UUID id;
 
@@ -34,6 +32,9 @@ public class Device {
     @CreationTimestamp
     @Column(name = "creation_time", nullable = false, updatable = false)
     private OffsetDateTime creationTime;
+
+    @Version
+    private Long version;
 
     public UUID getId() {
         return id;
@@ -66,4 +67,8 @@ public class Device {
     public OffsetDateTime getCreationTime() {
         return creationTime;
     }
+
+    public Long getVersion() { return version; }
+
+    public void setVersion(Long version) { this.version = version; }
 }
