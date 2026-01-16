@@ -7,27 +7,27 @@ import com.device.management.controller.response.DeviceResponse;
 import com.device.management.exception.GlobalExceptionHandler;
 import com.device.management.mapper.ApiMapper;
 import com.device.management.service.DeviceUseCase;
-import com.device.management.service.dto.DeviceCreateCommand;
-import com.device.management.service.dto.DeviceUpdateCommand;
-import com.device.management.service.dto.DeviceView;
+import com.device.management.service.dto.*;
 import com.device.management.state.DeviceState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import static com.device.management.TestConstants.*;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -49,6 +49,7 @@ public class DeviceManagementControllerTest {
         DeviceManagementController controller = new DeviceManagementController(useCase, apiMapper);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .build();
     }
 
@@ -60,17 +61,17 @@ public class DeviceManagementControllerTest {
         UUID id = UUID.fromString(DEVICE_ID);
         OffsetDateTime createdAt = OffsetDateTime.parse(CREATION_TIME);
 
-        when(apiMapper.toCreateCommand(ArgumentMatchers.any(DeviceRequest.class)))
+        when(apiMapper.toCreateCommand(any(DeviceRequest.class)))
                 .thenAnswer(mock -> {
                     DeviceRequest request = mock.getArgument(0);
                     return new DeviceCreateCommand(request.name(), request.brand(), request.state());
                 });
-        when(useCase.create(ArgumentMatchers.any(DeviceCreateCommand.class)))
+        when(useCase.create(any(DeviceCreateCommand.class)))
                 .thenAnswer(mock -> {
                     DeviceCreateCommand command = mock.getArgument(0);
                     return new DeviceView(id, command.name(), command.brand(), command.state(), createdAt);
                 });
-        when(apiMapper.toResponse(ArgumentMatchers.any(DeviceView.class)))
+        when(apiMapper.toResponse(any(DeviceView.class)))
                 .thenAnswer(mock -> {
                     DeviceView view = mock.getArgument(0);
                     return new DeviceResponse(view.id(), view.name(), view.brand(), view.state(), view.creationTime());
@@ -150,7 +151,7 @@ public class DeviceManagementControllerTest {
 
         when(useCase.get(id))
                 .thenReturn(new DeviceView(id, name, brand, state, createdAt));
-        when(apiMapper.toResponse(ArgumentMatchers.any(DeviceView.class)))
+        when(apiMapper.toResponse(any(DeviceView.class)))
                 .thenAnswer(mock -> {
                     DeviceView deviceView = mock.getArgument(0);
                     return new DeviceResponse(
@@ -230,7 +231,7 @@ public class DeviceManagementControllerTest {
 
         DeviceResponse response = new DeviceResponse(
                 UUID.fromString(NEW_DEVICE_ID),
-                DEVICE_NAME,
+                NEW_DEVICE_NAME,
                 NEW_DEVICE_BRAND,
                 DeviceState.AVAILABLE,
                 OffsetDateTime.parse(NEW_CREATION_TIME));
@@ -243,7 +244,7 @@ public class DeviceManagementControllerTest {
                 .andExpect(jsonPath("$.id").value(NEW_DEVICE_ID))
                 .andExpect(jsonPath("$.name").value(NEW_DEVICE_NAME))
                 .andExpect(jsonPath("$.brand").value(NEW_DEVICE_BRAND))
-                .andExpect(jsonPath("$.state").value(DeviceState.AVAILABLE))
+                .andExpect(jsonPath("$.state").value(DeviceState.AVAILABLE.name()))
                 .andExpect(jsonPath("$.creationTime").value(NEW_CREATION_TIME));
     }
 
@@ -333,5 +334,97 @@ public class DeviceManagementControllerTest {
                 .andExpect(jsonPath("$.name").value(DEVICE_NAME))
                 .andExpect(jsonPath("$.brand").value(DEVICE_BRAND))
                 .andExpect(jsonPath("$.state").value(DeviceState.AVAILABLE.name()));
+    }
+
+    @Test
+    void list_noFilter_success() throws Exception {
+        // Mock service response
+        DeviceView view1 = new DeviceView(
+                UUID.fromString(DEVICE_ID),
+                DEVICE_NAME,
+                DEVICE_BRAND,
+                DeviceState.AVAILABLE,
+                OffsetDateTime.parse(CREATION_TIME));
+        DeviceView view2 = new DeviceView(
+                UUID.fromString(NEW_DEVICE_ID),
+                NEW_DEVICE_NAME,
+                NEW_DEVICE_BRAND,
+                DeviceState.AVAILABLE,
+                OffsetDateTime.parse(NEW_CREATION_TIME));
+
+        PageResult<DeviceView> result = new PageResult<>(
+                List.of(view1, view2),
+                0,
+                20,
+                2,
+                1,
+                true,
+                true
+        );
+
+        when(useCase.list(any(DeviceFilter.class), any()))
+                .thenReturn(result);
+
+        // Mock mapper
+        Mockito.when(apiMapper.toResponse(view1))
+                .thenReturn(new DeviceResponse(
+                        UUID.fromString(DEVICE_ID),
+                        DEVICE_NAME,
+                        DEVICE_BRAND,
+                        DeviceState.AVAILABLE,
+                        OffsetDateTime.parse(CREATION_TIME)));
+        Mockito.when(apiMapper.toResponse(view2))
+                .thenReturn(new DeviceResponse(
+                        UUID.fromString(NEW_DEVICE_ID),
+                        NEW_DEVICE_NAME,
+                        NEW_DEVICE_BRAND,
+                        DeviceState.AVAILABLE,
+                        OffsetDateTime.parse(NEW_CREATION_TIME)));
+
+        mockMvc.perform(get("/devices"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].name").value(DEVICE_NAME))
+                .andExpect(jsonPath("$.content[0].brand").value(DEVICE_BRAND))
+                .andExpect(jsonPath("$.content[0].state").value(DeviceState.AVAILABLE.name()))
+                .andExpect(jsonPath("$.content[1].name").value(NEW_DEVICE_NAME))
+                .andExpect(jsonPath("$.content[1].brand").value(NEW_DEVICE_BRAND))
+                .andExpect(jsonPath("$.content[1].state").value((DeviceState.AVAILABLE.name())));
+    }
+
+    @Test
+    void list_pagination_success() throws Exception {
+        DeviceView view = new DeviceView(
+                UUID.fromString(NEW_DEVICE_ID),
+                NEW_DEVICE_NAME,
+                NEW_DEVICE_BRAND,
+                DeviceState.INACTIVE,
+                OffsetDateTime.parse(NEW_CREATION_TIME));
+        PageResult<DeviceView> result = new PageResult<>(
+                List.of(view),
+                1,
+                5,
+                6,
+                2,
+                false,
+                false);
+
+        Mockito.when(useCase.list(eq(new DeviceFilter(null, null)), any())).thenReturn(result);
+        Mockito.when(apiMapper.toResponse(view))
+                .thenReturn(new DeviceResponse(
+                        UUID.fromString(NEW_DEVICE_ID),
+                        NEW_DEVICE_NAME,
+                        NEW_DEVICE_BRAND,
+                        DeviceState.INACTIVE,
+                        OffsetDateTime.parse(NEW_CREATION_TIME)));
+
+        mockMvc.perform(get("/devices")
+                        .param("page", "1")
+                        .param("size", "5")
+                        .param("sort", "creationTime,desc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].name").value(NEW_DEVICE_NAME))
+                .andExpect(jsonPath("$.totalElements").value(6))
+                .andExpect(jsonPath("$.totalPages").value(2));
     }
 }
