@@ -1,4 +1,6 @@
-package com.device.management.application;
+package com.device.management.service;
+
+import com.device.management.service.dto.*;
 
 import java.util.UUID;
 

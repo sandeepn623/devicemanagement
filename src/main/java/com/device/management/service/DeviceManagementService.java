@@ -1,10 +1,10 @@
 package com.device.management.service;
 
 
-import com.device.management.application.*;
 import com.device.management.entity.Device;
 import com.device.management.mapper.DeviceMapper;
 import com.device.management.repository.DeviceRepository;
+import com.device.management.service.dto.*;
 import com.device.management.state.DeviceState;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

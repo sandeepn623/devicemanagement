@@ -1,9 +1,9 @@
 package com.device.management.mapper;
 
 
-import com.device.management.application.DeviceCreateCommand;
-import com.device.management.application.DeviceUpdateCommand;
-import com.device.management.application.DeviceView;
+import com.device.management.service.dto.DeviceCreateCommand;
+import com.device.management.service.dto.DeviceUpdateCommand;
+import com.device.management.service.dto.DeviceView;
 import com.device.management.entity.Device;
 import org.mapstruct.*;
 

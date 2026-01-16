@@ -1,6 +1,5 @@
-package com.device.management.application;
+package com.device.management.service.dto;
 
-import javax.swing.*;
 import java.util.List;
 
 public record PageRequest(

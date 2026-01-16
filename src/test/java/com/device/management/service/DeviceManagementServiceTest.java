@@ -1,7 +1,7 @@
 package com.device.management.service;
 
-import com.device.management.application.DeviceCreateCommand;
-import com.device.management.application.DeviceView;
+import com.device.management.service.dto.DeviceCreateCommand;
+import com.device.management.service.dto.DeviceView;
 import com.device.management.entity.Device;
 import com.device.management.mapper.DeviceMapper;
 import com.device.management.repository.DeviceRepository;

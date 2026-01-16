@@ -1,10 +1,11 @@
 package com.device.management.controller;
 
-import com.device.management.application.*;
 import com.device.management.controller.request.DeviceRequest;
 import com.device.management.controller.request.DeviceUpdateRequest;
 import com.device.management.controller.response.DeviceResponse;
 import com.device.management.mapper.ApiMapper;
+import com.device.management.service.DeviceUseCase;
+import com.device.management.service.dto.*;
 import com.device.management.state.DeviceState;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;

@@ -1,8 +1,8 @@
 package com.device.management.mapper;
 
-import com.device.management.application.DeviceCreateCommand;
-import com.device.management.application.DeviceUpdateCommand;
-import com.device.management.application.DeviceView;
+import com.device.management.service.dto.DeviceCreateCommand;
+import com.device.management.service.dto.DeviceUpdateCommand;
+import com.device.management.service.dto.DeviceView;
 import com.device.management.controller.request.DeviceRequest;
 import com.device.management.controller.request.DeviceUpdateRequest;
 import com.device.management.controller.response.DeviceResponse;

@@ -1,9 +1,9 @@
 package com.device.management.controller;
 
 
-import com.device.management.application.DeviceCreateCommand;
-import com.device.management.application.DeviceUseCase;
-import com.device.management.application.DeviceView;
+import com.device.management.service.dto.DeviceCreateCommand;
+import com.device.management.service.DeviceUseCase;
+import com.device.management.service.dto.DeviceView;
 import com.device.management.controller.request.DeviceRequest;
 import com.device.management.controller.response.DeviceResponse;
 import com.device.management.exception.GlobalExceptionHandler;
