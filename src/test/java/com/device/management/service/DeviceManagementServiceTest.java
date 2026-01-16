@@ -148,7 +148,7 @@ public class DeviceManagementServiceTest {
         device.setState(DeviceState.AVAILABLE);
 
         DeviceUpdateCommand deviceUpdateCommand = new DeviceUpdateCommand(DEVICE_NAME, DEVICE_BRAND, DeviceState.AVAILABLE);
-        DeviceView deviceView = new DeviceView(id, DEVICE_NAME, DEVICE_BRAND, DeviceState.AVAILABLE, OffsetDateTime.parse(CREATION_TIME));
+        DeviceView deviceView = new DeviceView(id, NEW_DEVICE_NAME, NEW_DEVICE_BRAND, DeviceState.AVAILABLE, OffsetDateTime.parse(CREATION_TIME));
 
         when(repository.findById(id)).thenReturn(Optional.of(device));
         when(mapper.toView(device)).thenReturn(deviceView);
@@ -168,7 +168,7 @@ public class DeviceManagementServiceTest {
         Device device = new Device();
         device.setState(DeviceState.IN_USE);
 
-        DeviceUpdateCommand deviceUpdateCommand = new DeviceUpdateCommand(DEVICE_NAME, null, DeviceState.IN_USE);
+        DeviceUpdateCommand deviceUpdateCommand = new DeviceUpdateCommand(NEW_DEVICE_NAME, null, DeviceState.IN_USE);
 
         when(repository.findById(id)).thenReturn(Optional.of(device));
 
@@ -193,7 +193,7 @@ public class DeviceManagementServiceTest {
         Device device = new Device();
         device.setState(DeviceState.IN_USE);
 
-        DeviceUpdateCommand deviceUpdateCommand = new DeviceUpdateCommand(null, DEVICE_BRAND, DeviceState.IN_USE);
+        DeviceUpdateCommand deviceUpdateCommand = new DeviceUpdateCommand(null, NEW_DEVICE_BRAND, DeviceState.IN_USE);
 
         when(repository.findById(id)).thenReturn(Optional.of(device));
 
@@ -241,4 +241,109 @@ public class DeviceManagementServiceTest {
         verify(mapper, never()).update(any(), any());
     }
 
+    @Test
+    @DisplayName("updateFull perform full update Successful")
+    void updateFull_whenFullUpdate_updatesSuccessfully() {
+        UUID id = UUID.randomUUID();
+
+        Device device = new Device();
+        device.setName(DEVICE_NAME);
+        device.setBrand(DEVICE_BRAND);
+        device.setState(DeviceState.AVAILABLE);
+
+        DeviceCreateCommand deviceCreateCommand = new DeviceCreateCommand(NEW_DEVICE_NAME, NEW_DEVICE_BRAND, DeviceState.IN_USE);
+        DeviceView deviceView = new DeviceView(id, DEVICE_NAME, DEVICE_BRAND, DeviceState.AVAILABLE, OffsetDateTime.parse(CREATION_TIME));
+
+        when(repository.findById(id)).thenReturn(Optional.of(device));
+        when(mapper.toView(device)).thenReturn(deviceView);
+
+        DeviceView result = service.updateFull(id, deviceCreateCommand);
+
+        verify(mapper).toView(device);
+        assertEquals(deviceView, result);
+    }
+
+    @Test
+    @DisplayName("updateFull Successful when no change then no update")
+    void updateFull_whenNoChange_noUpdate() {
+        UUID id = UUID.randomUUID();
+
+        Device device = new Device();
+        device.setName(DEVICE_NAME);
+        device.setBrand(DEVICE_BRAND);
+        device.setState(DeviceState.AVAILABLE);
+
+        DeviceCreateCommand deviceCreateCommand = new DeviceCreateCommand(DEVICE_NAME, DEVICE_BRAND, DeviceState.AVAILABLE);
+        DeviceView deviceView = new DeviceView(id, DEVICE_NAME, DEVICE_BRAND, DeviceState.AVAILABLE, OffsetDateTime.parse(CREATION_TIME));
+
+        when(repository.findById(id)).thenReturn(Optional.of(device));
+        when(mapper.toView(device)).thenReturn(deviceView);
+
+        DeviceView result = service.updateFull(id, deviceCreateCommand);
+
+        verify(mapper).toView(device);
+        assertEquals(deviceView, result);
+    }
+
+    @Test
+    @DisplayName("updateFull Partial update not allowed throws IllegalStateException ")
+    void updateFull_whenPartialUpdate_throwsException() {
+        UUID id = UUID.randomUUID();
+
+        Device device = new Device();
+        device.setState(DeviceState.AVAILABLE);
+        device.setName(DEVICE_NAME);
+        device.setBrand(DEVICE_BRAND);
+
+        DeviceCreateCommand deviceCreateCommand = new DeviceCreateCommand(NEW_DEVICE_NAME, NEW_DEVICE_BRAND, DeviceState.AVAILABLE);
+        DeviceView deviceView = new DeviceView(id, DEVICE_NAME, DEVICE_BRAND, DeviceState.AVAILABLE, OffsetDateTime.parse(CREATION_TIME));
+
+        when(repository.findById(id)).thenReturn(Optional.of(device));
+        when(mapper.toView(device)).thenReturn(deviceView);
+
+        DeviceView result = service.updateFull(id, deviceCreateCommand);
+
+        verify(mapper).toView(device);
+        assertEquals(deviceView, result);
+    }
+
+    @Test
+    @DisplayName("updateFull throws IllegalStateException when device is IN_USE")
+    void updateFull_whenDeviceInUse_throwsException() {
+        UUID id = UUID.randomUUID();
+
+        Device device = new Device();
+        device.setState(DeviceState.IN_USE);
+
+        DeviceCreateCommand deviceCreateCommand = new DeviceCreateCommand(NEW_DEVICE_NAME, NEW_DEVICE_BRAND, DeviceState.AVAILABLE);
+
+        when(repository.findById(id)).thenReturn(Optional.of(device));
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> service.updateFull(id, deviceCreateCommand)
+        );
+
+        assertEquals(
+                "Cannot update name/brand while device is IN_USE",
+                ex.getMessage()
+        );
+
+        verify(mapper, never()).update(any(), any());
+    }
+
+    @Test
+    @DisplayName("updateFull throws NoSuchElementException when device not found")
+    void updateFull_whenDeviceNotFound_throwsNotFound() {
+        UUID id = UUID.randomUUID();
+
+        when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(
+                NoSuchElementException.class,
+                () -> service.updateFull(id, new DeviceCreateCommand(NEW_DEVICE_NAME, NEW_DEVICE_BRAND, DeviceState.AVAILABLE))
+        );
+
+        verify(mapper, never()).update(any(), any());
+    }
 }
