@@ -6,6 +6,8 @@ import com.device.management.mapper.DeviceMapper;
 import com.device.management.repository.DeviceRepository;
 import com.device.management.service.dto.*;
 import com.device.management.state.DeviceState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -19,6 +21,8 @@ import java.util.UUID;
 @Service
 @Transactional
 public class DeviceManagementService implements DeviceUseCase {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeviceManagementService.class);
+
     private final DeviceRepository repository;
     private final DeviceMapper mapper;
 
@@ -49,7 +53,7 @@ public class DeviceManagementService implements DeviceUseCase {
 
         boolean allUnchanged = changedCount == 0;
         boolean allChanged = changedCount == 3;
-
+        LOGGER.info("deviceId: {}, {} changed and {} all unchanged", id, allUnchanged, allChanged);
         if (device.getState() == DeviceState.IN_USE && (nameChanged || brandChanged)) {
             throw new IllegalStateException("Cannot update name/brand while device is IN_USE");
         }
@@ -63,7 +67,6 @@ public class DeviceManagementService implements DeviceUseCase {
         device.setName(cmd.name());
         device.setBrand(cmd.brand());
         device.setState(cmd.state());
-
         return mapper.toView(device);
     }
 
