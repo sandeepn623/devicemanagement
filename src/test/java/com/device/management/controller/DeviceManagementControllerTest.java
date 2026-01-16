@@ -2,11 +2,13 @@ package com.device.management.controller;
 
 
 import com.device.management.controller.request.DeviceRequest;
+import com.device.management.controller.request.DeviceUpdateRequest;
 import com.device.management.controller.response.DeviceResponse;
 import com.device.management.exception.GlobalExceptionHandler;
 import com.device.management.mapper.ApiMapper;
 import com.device.management.service.DeviceUseCase;
 import com.device.management.service.dto.DeviceCreateCommand;
+import com.device.management.service.dto.DeviceUpdateCommand;
 import com.device.management.service.dto.DeviceView;
 import com.device.management.state.DeviceState;
 import org.junit.jupiter.api.BeforeEach;
@@ -243,5 +245,93 @@ public class DeviceManagementControllerTest {
                 .andExpect(jsonPath("$.brand").value(NEW_DEVICE_BRAND))
                 .andExpect(jsonPath("$.state").value(DeviceState.AVAILABLE))
                 .andExpect(jsonPath("$.creationTime").value(NEW_CREATION_TIME));
+    }
+
+    @Test
+    void updatePartial_success() throws Exception {
+        UUID id = UUID.randomUUID();
+        DeviceUpdateRequest request = new DeviceUpdateRequest(NEW_DEVICE_NAME, null, null); // only name changed
+
+        // Mock mapper to command
+        DeviceUpdateCommand command = new DeviceUpdateCommand(NEW_DEVICE_NAME, null, null);
+        Mockito.when(apiMapper.toUpdateCommand(request)).thenReturn(command);
+
+        // Mock service response
+        DeviceView view = new DeviceView(
+                UUID.fromString(DEVICE_ID),
+                NEW_DEVICE_NAME,
+                DEVICE_BRAND,
+                DeviceState.AVAILABLE,
+                OffsetDateTime.parse(CREATION_TIME));
+        Mockito.when(useCase.updatePartial(eq(id), eq(command))).thenReturn(view);
+
+        // Mock mapper to response
+        DeviceResponse response = new DeviceResponse(
+                UUID.fromString(DEVICE_ID),
+                NEW_DEVICE_NAME,
+                DEVICE_BRAND,
+                DeviceState.AVAILABLE,
+                OffsetDateTime.parse(CREATION_TIME));
+        Mockito.when(apiMapper.toResponse(view)).thenReturn(response);
+
+        // Perform PATCH request
+        mockMvc.perform(patch("/devices/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value(NEW_DEVICE_NAME))
+                .andExpect(jsonPath("$.brand").value(DEVICE_BRAND))
+                .andExpect(jsonPath("$.state").value(DeviceState.AVAILABLE.name()));
+    }
+
+    @Test
+    void updatePartial_serviceThrowsException_returnsError() throws Exception {
+        UUID id = UUID.randomUUID();
+        DeviceUpdateRequest request = new DeviceUpdateRequest(NEW_DEVICE_NAME, null, null);
+
+        DeviceUpdateCommand command = new DeviceUpdateCommand(NEW_DEVICE_NAME, null, null);
+        Mockito.when(apiMapper.toUpdateCommand(request)).thenReturn(command);
+
+        Mockito.when(useCase.updatePartial(eq(id), eq(command)))
+                .thenThrow(new IllegalStateException("Cannot update name/brand while device is IN_USE"));
+
+        mockMvc.perform(patch("/devices/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("Cannot update name/brand while device is IN_USE"));
+    }
+
+    @Test
+    void updatePartial_noChanges_success() throws Exception {
+        UUID id = UUID.randomUUID();
+        DeviceUpdateRequest request = new DeviceUpdateRequest(null, null, null); // no change
+
+        DeviceUpdateCommand command = new DeviceUpdateCommand(null, null, null);
+        Mockito.when(apiMapper.toUpdateCommand(request)).thenReturn(command);
+
+        DeviceView view = new DeviceView(
+                UUID.fromString(DEVICE_ID),
+                DEVICE_NAME,
+                DEVICE_BRAND,
+                DeviceState.AVAILABLE,
+                OffsetDateTime.parse(CREATION_TIME));
+        Mockito.when(useCase.updatePartial(eq(id), eq(command))).thenReturn(view);
+
+        DeviceResponse response = new DeviceResponse(
+                UUID.fromString(DEVICE_ID),
+                DEVICE_NAME,
+                DEVICE_BRAND,
+                DeviceState.AVAILABLE,
+                OffsetDateTime.parse(CREATION_TIME));
+        Mockito.when(apiMapper.toResponse(view)).thenReturn(response);
+
+        mockMvc.perform(patch("/devices/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value(DEVICE_NAME))
+                .andExpect(jsonPath("$.brand").value(DEVICE_BRAND))
+                .andExpect(jsonPath("$.state").value(DeviceState.AVAILABLE.name()));
     }
 }
