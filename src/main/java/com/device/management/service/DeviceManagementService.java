@@ -36,8 +36,15 @@ public class DeviceManagementService implements DeviceUseCase {
     }
 
     @Override
-    public DeviceView updatePartial(UUID id, DeviceUpdateCommand cmd) {
-        return null;
+    public DeviceView updatePartial(UUID id, DeviceUpdateCommand deviceUpdateCommand) {
+        Device device = repository.findById(id).orElseThrow(() -> notFound(id));
+        boolean wantsNameChange = deviceUpdateCommand.name() != null;
+        boolean wantsBrandChange = deviceUpdateCommand.brand() != null;
+        if (device.getState() == DeviceState.IN_USE && (wantsNameChange || wantsBrandChange)) {
+            throw new IllegalStateException("Cannot update name/brand while device is IN_USE");
+        }
+        mapper.update(device, deviceUpdateCommand);
+        return mapper.toView(device);
     }
 
     @Override
