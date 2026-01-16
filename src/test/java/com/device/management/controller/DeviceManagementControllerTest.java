@@ -1,13 +1,13 @@
 package com.device.management.controller;
 
 
-import com.device.management.service.dto.DeviceCreateCommand;
-import com.device.management.service.DeviceUseCase;
-import com.device.management.service.dto.DeviceView;
 import com.device.management.controller.request.DeviceRequest;
 import com.device.management.controller.response.DeviceResponse;
 import com.device.management.exception.GlobalExceptionHandler;
 import com.device.management.mapper.ApiMapper;
+import com.device.management.service.DeviceUseCase;
+import com.device.management.service.dto.DeviceCreateCommand;
+import com.device.management.service.dto.DeviceView;
 import com.device.management.state.DeviceState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,6 +17,7 @@ import org.mockito.Mockito;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.OffsetDateTime;
 import java.util.NoSuchElementException;
@@ -25,13 +26,15 @@ import java.util.UUID;
 import static com.device.management.TestConstants.*;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 public class DeviceManagementControllerTest {
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private MockMvc mockMvc;
     private DeviceUseCase useCase;
@@ -173,5 +176,72 @@ public class DeviceManagementControllerTest {
 
         mockMvc.perform(get("/devices/{id}", id))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("PUT /devices/{id} returns 400 with invalid request body")
+    void updateFull_invalidRequest_returnsBadRequest() throws Exception {
+        UUID id = UUID.randomUUID();
+        DeviceRequest request = new DeviceRequest("", DEVICE_BRAND, DeviceState.AVAILABLE);
+
+        mockMvc.perform(put("/devices/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PUT /devices/{id} returns 409 device state is already IN_USE")
+    void updateFull_serviceThrowsException_returnsError() throws Exception {
+        UUID id = UUID.randomUUID();
+        DeviceRequest request = new DeviceRequest(DEVICE_NAME, DEVICE_BRAND, DeviceState.AVAILABLE);
+
+        DeviceCreateCommand command = new DeviceCreateCommand(DEVICE_NAME, DEVICE_BRAND, DeviceState.AVAILABLE);
+        Mockito.when(apiMapper.toCreateCommand(request)).thenReturn(command);
+
+        Mockito.when(useCase.updateFull(eq(id), eq(command)))
+                .thenThrow(new IllegalStateException("Cannot update while IN_USE"));
+
+        mockMvc.perform(put("/devices/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("Cannot update while IN_USE"));
+    }
+
+    @Test
+    @DisplayName("PUT /devices/{id} returns 200 ok")
+    void updateFull_success() throws Exception {
+        UUID id = UUID.randomUUID();
+        DeviceRequest request = new DeviceRequest(NEW_DEVICE_NAME, NEW_DEVICE_BRAND, DeviceState.AVAILABLE);
+
+        DeviceCreateCommand command = new DeviceCreateCommand(NEW_DEVICE_NAME, NEW_DEVICE_BRAND, DeviceState.AVAILABLE);
+        Mockito.when(apiMapper.toCreateCommand(request)).thenReturn(command);
+
+        DeviceView view = new DeviceView(
+                UUID.fromString(NEW_DEVICE_ID),
+                NEW_DEVICE_NAME,
+                NEW_DEVICE_BRAND,
+                DeviceState.AVAILABLE,
+                OffsetDateTime.parse(NEW_CREATION_TIME));
+        Mockito.when(useCase.updateFull(eq(id), eq(command))).thenReturn(view);
+
+        DeviceResponse response = new DeviceResponse(
+                UUID.fromString(NEW_DEVICE_ID),
+                DEVICE_NAME,
+                NEW_DEVICE_BRAND,
+                DeviceState.AVAILABLE,
+                OffsetDateTime.parse(NEW_CREATION_TIME));
+        Mockito.when(apiMapper.toResponse(view)).thenReturn(response);
+
+        mockMvc.perform(put("/devices/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(NEW_DEVICE_ID))
+                .andExpect(jsonPath("$.name").value(NEW_DEVICE_NAME))
+                .andExpect(jsonPath("$.brand").value(NEW_DEVICE_BRAND))
+                .andExpect(jsonPath("$.state").value(DeviceState.AVAILABLE))
+                .andExpect(jsonPath("$.creationTime").value(NEW_CREATION_TIME));
     }
 }
