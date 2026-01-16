@@ -25,15 +25,15 @@ public class DeviceManagementController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public DeviceResponse create(@Valid @RequestBody DeviceRequest request) {
-        var cmd = apiMapper.toCreateCommand(request);
-        var view = useCase.create(cmd);
-        return apiMapper.toResponse(view);
+        var deviceCreateCommand = apiMapper.toCreateCommand(request);
+        var deviceView = useCase.create(deviceCreateCommand);
+        return apiMapper.toResponse(deviceView);
     }
 
     @GetMapping("/{id}")
     public DeviceResponse get(@PathVariable UUID id) {
-        var view = useCase.get(id);
-        return apiMapper.toResponse(view);
+        var deviceView = useCase.get(id);
+        return apiMapper.toResponse(deviceView);
     }
 
     @DeleteMapping("/{id}")
