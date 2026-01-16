@@ -249,6 +249,7 @@ public class DeviceManagementControllerTest {
     }
 
     @Test
+    @DisplayName("PATCH /devices/{id} update partial name only returns 200 ok")
     void updatePartial_success() throws Exception {
         UUID id = UUID.randomUUID();
         DeviceUpdateRequest request = new DeviceUpdateRequest(NEW_DEVICE_NAME, null, null); // only name changed
@@ -286,6 +287,7 @@ public class DeviceManagementControllerTest {
     }
 
     @Test
+    @DisplayName("PATCH /devices/{id} update partial name only returns 409 conflict when device state is IN_USE")
     void updatePartial_serviceThrowsException_returnsError() throws Exception {
         UUID id = UUID.randomUUID();
         DeviceUpdateRequest request = new DeviceUpdateRequest(NEW_DEVICE_NAME, null, null);
@@ -304,6 +306,7 @@ public class DeviceManagementControllerTest {
     }
 
     @Test
+    @DisplayName("PATCH /devices/{id} update partial no changes returns 200 ok")
     void updatePartial_noChanges_success() throws Exception {
         UUID id = UUID.randomUUID();
         DeviceUpdateRequest request = new DeviceUpdateRequest(null, null, null); // no change
@@ -337,6 +340,7 @@ public class DeviceManagementControllerTest {
     }
 
     @Test
+    @DisplayName("GET /devices fetch all devices no filter")
     void list_noFilter_success() throws Exception {
         // Mock service response
         DeviceView view1 = new DeviceView(
@@ -393,6 +397,7 @@ public class DeviceManagementControllerTest {
     }
 
     @Test
+    @DisplayName("GET /devices fetch all devices using pagination filters")
     void list_pagination_success() throws Exception {
         DeviceView view = new DeviceView(
                 UUID.fromString(NEW_DEVICE_ID),
