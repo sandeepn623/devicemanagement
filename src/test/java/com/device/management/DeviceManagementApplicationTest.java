@@ -2,11 +2,10 @@ package com.device.management;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(properties = {
-        "spring.flyway.enabled=false",
-        "spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect"
-})
+@SpringBootTest
+@ActiveProfiles("test")
 public class DeviceManagementApplicationTest {
 
     @Test
