@@ -1,10 +1,11 @@
 package com.device.management.controller;
 
+
 import com.device.management.application.DeviceCreateCommand;
 import com.device.management.application.DeviceUseCase;
 import com.device.management.application.DeviceView;
-import com.device.management.dto.DeviceRequest;
-import com.device.management.dto.DeviceResponse;
+import com.device.management.controller.request.DeviceRequest;
+import com.device.management.controller.response.DeviceResponse;
 import com.device.management.exception.GlobalExceptionHandler;
 import com.device.management.mapper.ApiMapper;
 import com.device.management.state.DeviceState;
@@ -27,7 +28,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -156,7 +156,6 @@ public class DeviceManagementControllerTest {
                             deviceView.creationTime());
                 });
 
-        // Act + Assert
         mockMvc.perform(get("/devices/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(id.toString())))
@@ -172,7 +171,6 @@ public class DeviceManagementControllerTest {
         UUID id = UUID.fromString(DEVICE_ID);
         when(useCase.get(id)).thenThrow(new NoSuchElementException("Device not found"));
 
-        // Act + Assert
         mockMvc.perform(get("/devices/{id}", id))
                 .andExpect(status().isNotFound());
     }

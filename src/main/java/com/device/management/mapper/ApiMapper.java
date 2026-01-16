@@ -3,9 +3,9 @@ package com.device.management.mapper;
 import com.device.management.application.DeviceCreateCommand;
 import com.device.management.application.DeviceUpdateCommand;
 import com.device.management.application.DeviceView;
-import com.device.management.dto.DeviceRequest;
-import com.device.management.dto.DeviceResponse;
-import com.device.management.dto.DeviceUpdateRequest;
+import com.device.management.controller.request.DeviceRequest;
+import com.device.management.controller.request.DeviceUpdateRequest;
+import com.device.management.controller.response.DeviceResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 

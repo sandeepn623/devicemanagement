@@ -1,4 +1,4 @@
-package com.device.management.dto;
+package com.device.management.controller.response;
 
 
 import com.device.management.state.DeviceState;

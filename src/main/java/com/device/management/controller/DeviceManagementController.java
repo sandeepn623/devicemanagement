@@ -1,9 +1,9 @@
 package com.device.management.controller;
 
 import com.device.management.application.*;
-import com.device.management.dto.DeviceRequest;
-import com.device.management.dto.DeviceResponse;
-import com.device.management.dto.DeviceUpdateRequest;
+import com.device.management.controller.request.DeviceRequest;
+import com.device.management.controller.request.DeviceUpdateRequest;
+import com.device.management.controller.response.DeviceResponse;
 import com.device.management.mapper.ApiMapper;
 import com.device.management.state.DeviceState;
 import jakarta.validation.Valid;
