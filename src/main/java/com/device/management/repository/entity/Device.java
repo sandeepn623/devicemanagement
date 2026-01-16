@@ -1,4 +1,4 @@
-package com.device.management.entity;
+package com.device.management.repository.entity;
 
 import com.device.management.state.DeviceState;
 import jakarta.persistence.*;

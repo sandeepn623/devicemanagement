@@ -1,6 +1,6 @@
 package com.device.management.repository;
 
-import com.device.management.entity.Device;
+import com.device.management.repository.entity.Device;
 import com.device.management.state.DeviceState;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
