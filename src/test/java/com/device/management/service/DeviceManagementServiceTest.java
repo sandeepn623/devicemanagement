@@ -75,7 +75,6 @@ public class DeviceManagementServiceTest {
     @Test
     @DisplayName("create maps command to entity, saves, and returns mapped view")
     void create_success() {
-        // Arrange
         var deviceCreateCommand = new DeviceCreateCommand.Builder()
                 .name(DEVICE_NAME)
                 .brand(DEVICE_BRAND)
@@ -339,7 +338,6 @@ public class DeviceManagementServiceTest {
 
         DeviceView result = service.get(this.deviceId);
 
-        // Assert
         assertNotNull(result);
         assertEquals(DEVICE_NAME, result.name());
         assertEquals(DEVICE_BRAND, result.brand());
@@ -352,10 +350,8 @@ public class DeviceManagementServiceTest {
     @Test
     @DisplayName("get non existing device throws exception")
     void get_nonExistingDevice_throwsException() {
-        // Arrange
         when(repository.findById(deviceId)).thenReturn(Optional.empty());
 
-        // Act & Assert
         Exception exception = assertThrows(NoSuchElementException.class, () -> service.get(deviceId));
         assertTrue(exception.getMessage().contains(deviceId.toString()));
 

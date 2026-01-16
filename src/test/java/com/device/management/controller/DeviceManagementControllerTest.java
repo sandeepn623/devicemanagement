@@ -56,7 +56,6 @@ public class DeviceManagementControllerTest {
     @Test
     @DisplayName("POST /devices returns 201 with created device body")
     void createDevice_http_success() throws Exception {
-        // Arrange
         DeviceState state = DeviceState.AVAILABLE;
         UUID id = UUID.fromString(DEVICE_ID);
         OffsetDateTime createdAt = OffsetDateTime.parse(CREATION_TIME);
