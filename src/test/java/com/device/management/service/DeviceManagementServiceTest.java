@@ -3,9 +3,7 @@ package com.device.management.service;
 import com.device.management.mapper.DeviceMapper;
 import com.device.management.repository.DeviceRepository;
 import com.device.management.repository.entity.Device;
-import com.device.management.service.dto.DeviceCreateCommand;
-import com.device.management.service.dto.DeviceUpdateCommand;
-import com.device.management.service.dto.DeviceView;
+import com.device.management.service.dto.*;
 import com.device.management.state.DeviceState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,8 +13,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,6 +43,8 @@ public class DeviceManagementServiceTest {
     private UUID deviceId;
     private Device device;
     private DeviceView deviceView;
+    private Device newDevice;
+    private DeviceView newDeviceView;
 
     @BeforeEach
     void setUp() {
@@ -54,6 +59,17 @@ public class DeviceManagementServiceTest {
                 device.getBrand(),
                 device.getState(),
                 OffsetDateTime.parse(CREATION_TIME));
+
+        newDevice = new Device();
+        newDevice.setName(NEW_DEVICE_NAME);
+        newDevice.setBrand(NEW_DEVICE_BRAND);
+        newDevice.setState(DeviceState.IN_USE);
+        newDeviceView = new DeviceView(
+                UUID.fromString(NEW_DEVICE_ID),
+                newDevice.getName(),
+                newDevice.getBrand(),
+                newDevice.getState(),
+                OffsetDateTime.parse(NEW_CREATION_TIME));
     }
 
     @Test
@@ -334,6 +350,7 @@ public class DeviceManagementServiceTest {
     }
 
     @Test
+    @DisplayName("get non existing device throws exception")
     void get_nonExistingDevice_throwsException() {
         // Arrange
         when(repository.findById(deviceId)).thenReturn(Optional.empty());
@@ -344,5 +361,95 @@ public class DeviceManagementServiceTest {
 
         verify(repository).findById(deviceId);
         verifyNoInteractions(mapper); // mapper should not be called
+    }
+
+    @Test
+    @DisplayName("get list of devices for given brand and state")
+    void list_withBrandAndState_returnsMappedPageResult() {
+        DeviceFilter filter = new DeviceFilter(DEVICE_BRAND, DeviceState.AVAILABLE);
+        PageRequest pageRequest =
+                new PageRequest(0, 10, List.of(new SortOrder("creationTime", SortOrder.Direction.DESC)));
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                0, 10, Sort.by(Sort.Order.desc("creationTime")));
+        Page<Device> devicePage = new PageImpl<>(List.of(device), pageable, 1);
+
+        when(repository.findByBrandIgnoreCaseAndState(DEVICE_BRAND, DeviceState.AVAILABLE, pageable))
+                .thenReturn(devicePage);
+        when(mapper.toView(device)).thenReturn(deviceView);
+
+        PageResult<DeviceView> result = service.list(filter, pageRequest);
+
+        assertNotNull(result);
+        assertEquals(1, result.items().size());
+        assertEquals(DEVICE_NAME, result.items().get(0).name());
+
+        verify(repository).findByBrandIgnoreCaseAndState(DEVICE_BRAND, DeviceState.AVAILABLE, pageable);
+        verify(mapper).toView(device);
+    }
+
+    @Test
+    @DisplayName("get list of devices filter by brand")
+    void list_withOnlyBrand_returnsMappedPageResult() {
+        DeviceFilter filter = new DeviceFilter(NEW_DEVICE_BRAND, null);
+        PageRequest pageRequest = new PageRequest(0, 10, List.of());
+
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                0, 10, Sort.unsorted());
+
+        Page<Device> devicePage = new PageImpl<>(List.of(newDevice), pageable, 1);
+
+        when(repository.findByBrandIgnoreCase(NEW_DEVICE_BRAND, pageable)).thenReturn(devicePage);
+        when(mapper.toView(newDevice)).thenReturn(newDeviceView);
+
+        PageResult<DeviceView> result = service.list(filter, pageRequest);
+
+        assertEquals(1, result.items().size());
+        assertEquals(NEW_DEVICE_NAME, result.items().get(0).name());
+        verify(repository).findByBrandIgnoreCase(NEW_DEVICE_BRAND, pageable);
+    }
+
+    @Test
+    @DisplayName("get list of devices filter by state")
+    void list_withOnlyState_returnsMappedPageResult() {
+        DeviceFilter filter = new DeviceFilter(null, DeviceState.IN_USE);
+        PageRequest pageRequest = new PageRequest(0, 10, List.of());
+
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                0, 10, Sort.unsorted());
+
+        Page<Device> devicePage = new PageImpl<>(List.of(newDevice), pageable, 1);
+
+        when(repository.findByState(DeviceState.IN_USE, pageable)).thenReturn(devicePage);
+        when(mapper.toView(newDevice)).thenReturn(newDeviceView);
+
+        PageResult<DeviceView> result = service.list(filter, pageRequest);
+
+        assertEquals(1, result.items().size());
+        assertEquals(NEW_DEVICE_NAME, result.items().get(0).name());
+        assertEquals(DeviceState.IN_USE, result.items().get(0).state());
+        verify(repository).findByState(DeviceState.IN_USE, pageable);
+    }
+
+    @Test
+    @DisplayName("get list of devices no filter")
+    void list_withNoFilter_returnsMappedPageResult() {
+        DeviceFilter filter = null;
+        PageRequest pageRequest = new PageRequest(0, 10, List.of());
+
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                0, 10, Sort.unsorted());
+
+        Page<Device> devicePage = new PageImpl<>(List.of(device, newDevice), pageable, 2);
+
+        when(repository.findAll(pageable)).thenReturn(devicePage);
+        when(mapper.toView(device)).thenReturn(deviceView);
+        when(mapper.toView(newDevice)).thenReturn(newDeviceView);
+
+        PageResult<DeviceView> result = service.list(filter, pageRequest);
+
+        assertEquals(2, result.items().size());
+        verify(repository).findAll(pageable);
+        verify(mapper).toView(device);
+        verify(mapper).toView(newDevice);
     }
 }
