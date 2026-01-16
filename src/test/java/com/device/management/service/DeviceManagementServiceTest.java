@@ -1,10 +1,11 @@
 package com.device.management.service;
 
-import com.device.management.service.dto.DeviceCreateCommand;
-import com.device.management.service.dto.DeviceView;
-import com.device.management.repository.entity.Device;
 import com.device.management.mapper.DeviceMapper;
 import com.device.management.repository.DeviceRepository;
+import com.device.management.repository.entity.Device;
+import com.device.management.service.dto.DeviceCreateCommand;
+import com.device.management.service.dto.DeviceUpdateCommand;
+import com.device.management.service.dto.DeviceView;
 import com.device.management.state.DeviceState;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,7 +37,7 @@ public class DeviceManagementServiceTest {
     private DeviceManagementService service;
 
     @Test
-    @DisplayName("create() maps command -> entity, saves, and returns mapped view")
+    @DisplayName("create maps command to entity, saves, and returns mapped view")
     void create_success() {
         // Arrange
         var deviceCreateCommand = new DeviceCreateCommand.Builder()
@@ -90,7 +92,7 @@ public class DeviceManagementServiceTest {
     }
 
     @Test
-    @DisplayName("delete() deletes device when not IN_USE (happy path)")
+    @DisplayName("delete successful when not IN_USE (happy path)")
     void delete_success_service() {
         UUID id = UUID.fromString(DEVICE_ID);
         Device device = new Device();
@@ -108,7 +110,7 @@ public class DeviceManagementServiceTest {
     }
 
     @Test
-    @DisplayName("delete() throws NoSuchElementException when device not found")
+    @DisplayName("delete throws NoSuchElementException when device not found")
     void delete_notFound_service() {
         UUID id = UUID.fromString(DEVICE_ID);
 
@@ -121,7 +123,7 @@ public class DeviceManagementServiceTest {
     }
 
     @Test
-    @DisplayName("delete() throws IllegalStateException when device is IN_USE")
+    @DisplayName("delete throws IllegalStateException when device is IN_USE")
     void delete_inUse_service() {
         UUID id = UUID.fromString(DEVICE_ID);
         Device device = new Device();
@@ -136,4 +138,107 @@ public class DeviceManagementServiceTest {
         verify(repository, never()).deleteById(any());
         verifyNoMoreInteractions(repository);
     }
+
+    @Test
+    @DisplayName("update partial successful")
+    void updatePartial_whenDeviceNotInUse_updatesSuccessfully() {
+        UUID id = UUID.randomUUID();
+
+        Device device = new Device();
+        device.setState(DeviceState.AVAILABLE);
+
+        DeviceUpdateCommand deviceUpdateCommand = new DeviceUpdateCommand(DEVICE_NAME, DEVICE_BRAND, DeviceState.AVAILABLE);
+        DeviceView deviceView = new DeviceView(id, DEVICE_NAME, DEVICE_BRAND, DeviceState.AVAILABLE, OffsetDateTime.parse(CREATION_TIME));
+
+        when(repository.findById(id)).thenReturn(Optional.of(device));
+        when(mapper.toView(device)).thenReturn(deviceView);
+
+        DeviceView result = service.updatePartial(id, deviceUpdateCommand);
+
+        verify(mapper).update(device, deviceUpdateCommand);
+        verify(mapper).toView(device);
+        assertEquals(deviceView, result);
+    }
+
+    @Test
+    @DisplayName("update device name throws IllegalStateException when device is IN_USE")
+    void updatePartial_whenDeviceInUse_andNameChange_throwsException() {
+        UUID id = UUID.randomUUID();
+
+        Device device = new Device();
+        device.setState(DeviceState.IN_USE);
+
+        DeviceUpdateCommand deviceUpdateCommand = new DeviceUpdateCommand(DEVICE_NAME, null, DeviceState.IN_USE);
+
+        when(repository.findById(id)).thenReturn(Optional.of(device));
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> service.updatePartial(id, deviceUpdateCommand)
+        );
+
+        assertEquals(
+                "Cannot update name/brand while device is IN_USE",
+                ex.getMessage()
+        );
+
+        verify(mapper, never()).update(any(), any());
+    }
+
+    @Test
+    @DisplayName("update device brand throws IllegalStateException when device is IN_USE")
+    void updatePartial_whenDeviceInUse_andBrandChange_throwsException() {
+        UUID id = UUID.randomUUID();
+
+        Device device = new Device();
+        device.setState(DeviceState.IN_USE);
+
+        DeviceUpdateCommand deviceUpdateCommand = new DeviceUpdateCommand(null, DEVICE_BRAND, DeviceState.IN_USE);
+
+        when(repository.findById(id)).thenReturn(Optional.of(device));
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> service.updatePartial(id, deviceUpdateCommand)
+        );
+
+        verify(mapper, never()).update(any(), any());
+    }
+
+    @Test
+    @DisplayName("update device allowed but no update when device is IN_USE")
+    void updatePartial_whenDeviceInUse_andNoNameOrBrandChange_isAllowed() {
+        UUID id = UUID.randomUUID();
+
+        Device device = new Device();
+        device.setState(DeviceState.IN_USE);
+
+        DeviceUpdateCommand deviceUpdateCommand =
+                new DeviceUpdateCommand(null, null, DeviceState.IN_USE);
+        DeviceView deviceView = new DeviceView(id, null, null, DeviceState.IN_USE, OffsetDateTime.parse(CREATION_TIME));
+
+        when(repository.findById(id)).thenReturn(Optional.of(device));
+        when(mapper.toView(device)).thenReturn(deviceView);
+
+        DeviceView result = service.updatePartial(id, deviceUpdateCommand);
+
+        verify(mapper).update(device, deviceUpdateCommand);
+        assertEquals(deviceView, result);
+    }
+
+    @Test
+    @DisplayName("updatePartial throws NoSuchElementException when device not found")
+    void updatePartial_whenDeviceNotFound_throwsNotFound() {
+        UUID id = UUID.randomUUID();
+
+        when(repository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(
+                NoSuchElementException.class,
+                () -> service.updatePartial(id, new DeviceUpdateCommand(DEVICE_NAME, DEVICE_BRAND, DeviceState.AVAILABLE))
+        );
+
+        verify(mapper, never()).update(any(), any());
+    }
+
 }
