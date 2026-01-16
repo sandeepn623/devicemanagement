@@ -76,8 +76,10 @@ public class DeviceManagementService implements DeviceUseCase {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public DeviceView get(UUID id) {
-        return null;
+        Device device = repository.findById(id).orElseThrow(() -> notFound(id));
+        return mapper.toView(device);
     }
 
     @Override
