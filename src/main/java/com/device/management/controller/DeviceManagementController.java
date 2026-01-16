@@ -30,6 +30,13 @@ public class DeviceManagementController {
         return apiMapper.toResponse(deviceView);
     }
 
+    @PutMapping("/{id}")
+    public DeviceResponse updateFull(@PathVariable UUID id, @Valid @RequestBody DeviceRequest request) {
+        var deviceCreateCommand = apiMapper.toCreateCommand(request);
+        var deviceView = useCase.updateFull(id, deviceCreateCommand);
+        return apiMapper.toResponse(deviceView);
+    }
+
     @GetMapping("/{id}")
     public DeviceResponse get(@PathVariable UUID id) {
         var deviceView = useCase.get(id);
