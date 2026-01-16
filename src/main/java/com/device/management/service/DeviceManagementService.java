@@ -32,7 +32,35 @@ public class DeviceManagementService implements DeviceUseCase {
 
     @Override
     public DeviceView updateFull(UUID id, DeviceCreateCommand cmd) {
-        return null;
+        Device device = repository.findById(id).orElseThrow(() -> notFound(id));
+
+        boolean nameChanged = !cmd.name().equals(device.getName());
+        boolean brandChanged = !cmd.brand().equals(device.getBrand());
+        boolean stateChanged = !cmd.state().equals(device.getState());
+
+        int changedCount = 0;
+        if (nameChanged) changedCount++;
+        if (brandChanged) changedCount++;
+        if (stateChanged) changedCount++;
+
+        boolean allUnchanged = changedCount == 0;
+        boolean allChanged = changedCount == 3;
+
+        if (device.getState() == DeviceState.IN_USE && (nameChanged || brandChanged)) {
+            throw new IllegalStateException("Cannot update name/brand while device is IN_USE");
+        }
+
+        if (!(allUnchanged || allChanged)) {
+            throw new IllegalStateException(
+                    "PUT must either replace the entire resource or make no changes at all"
+            );
+        }
+
+        device.setName(cmd.name());
+        device.setBrand(cmd.brand());
+        device.setState(cmd.state());
+
+        return mapper.toView(device);
     }
 
     @Override
