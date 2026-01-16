@@ -6,9 +6,13 @@ import com.device.management.mapper.DeviceMapper;
 import com.device.management.repository.DeviceRepository;
 import com.device.management.service.dto.*;
 import com.device.management.state.DeviceState;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
@@ -83,8 +87,29 @@ public class DeviceManagementService implements DeviceUseCase {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResult<DeviceView> list(DeviceFilter filter, PageRequest pageRequest) {
-        return null;
+        Pageable pageable = toSpringPageable(pageRequest);
+        Page<Device> page;
+        String brand = filter != null ? filter.brand() : null;
+        DeviceState state = filter != null ? filter.state() : null;
+        if (brand != null && state != null) {
+            page = repository.findByBrandIgnoreCaseAndState(brand, state, pageable);
+        } else if (brand != null) {
+            page = repository.findByBrandIgnoreCase(brand, pageable);
+        } else if (state != null) {
+            page = repository.findByState(state, pageable);
+        } else {
+            page = repository.findAll(pageable);
+        }
+        var items = page.map(mapper::toView).getContent();
+        return new PageResult<>(items,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isFirst(),
+                page.isLast());
     }
 
     @Override
@@ -94,6 +119,24 @@ public class DeviceManagementService implements DeviceUseCase {
             throw new IllegalStateException("Cannot delete a device while it is IN_USE");
         }
         repository.deleteById(id);
+    }
+
+    private Pageable toSpringPageable(PageRequest pageRequest) {
+        if (pageRequest == null) {
+            return Pageable.unpaged();
+        }
+        Sort sort = Sort.unsorted();
+        if (pageRequest.sort() != null && !pageRequest.sort().isEmpty()) {
+            java.util.List<Sort.Order> orders = new ArrayList<>();
+            for (SortOrder sortOrder : pageRequest.sort()) {
+                Sort.Direction direction =
+                        (sortOrder.direction() == SortOrder.Direction.DESC) ? Sort.Direction.DESC : Sort.Direction.ASC;
+                orders.add(new Sort.Order(direction, sortOrder.property()));
+            }
+            sort = Sort.by(orders);
+        }
+        return org.springframework.data.domain.PageRequest
+                .of(Math.max(pageRequest.page(), 0), Math.max(pageRequest.size(), 1), sort);
     }
 
     private RuntimeException notFound(UUID id) {
