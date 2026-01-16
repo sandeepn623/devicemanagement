@@ -332,4 +332,17 @@ public class DeviceManagementServiceTest {
         verify(repository).findById(this.deviceId);
         verify(mapper).toView(device);
     }
+
+    @Test
+    void get_nonExistingDevice_throwsException() {
+        // Arrange
+        when(repository.findById(deviceId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        Exception exception = assertThrows(NoSuchElementException.class, () -> service.get(deviceId));
+        assertTrue(exception.getMessage().contains(deviceId.toString()));
+
+        verify(repository).findById(deviceId);
+        verifyNoInteractions(mapper); // mapper should not be called
+    }
 }
